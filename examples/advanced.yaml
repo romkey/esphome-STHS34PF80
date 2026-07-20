@@ -1,0 +1,148 @@
+# Advanced STHS34PF80 Example Configuration
+# This example shows all available sensors and configuration options
+
+esphome:
+  name: sths34pf80-advanced
+  friendly_name: STHS34PF80 Advanced Example
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  
+  # Enable fallback hotspot
+  ap:
+    ssid: "STHS34PF80 Advanced"
+    password: !secret fallback_password
+
+captive_portal:
+
+# I2C Configuration
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  scan: true
+  frequency: 400kHz
+
+# External Components
+external_components:
+  - source: github://romkey/esphome-STHS34PF80
+    components: [ sths34pf80 ]
+
+# STHS34PF80 Component (top-level configuration with all hardware settings)
+sths34pf80:
+  - id: ir_sensor
+    address: 0x5A
+    update_interval: 500ms
+    
+    # Hardware configuration
+    output_data_rate: 2HZ
+    motion_lpf: ODR_DIV_9
+    motion_presence_lpf: ODR_DIV_20
+    presence_lpf: ODR_DIV_50
+    temperature_lpf: ODR_DIV_100
+    amb_temp_avg: 8
+    obj_temp_avg: 32
+    wide_gain_mode: false
+    block_data_update: true
+    
+    # Interrupt configuration (if using INT pin)
+    enable_presence_interrupt: true
+    enable_motion_interrupt: true
+    int_active_low: false
+    int_open_drain: false
+    int_latched: false
+
+# STHS34PF80 Sensors + Optional Template Sensors
+sensor:
+  # STHS34PF80 numeric sensors
+  - platform: sths34pf80
+    sths34pf80_id: ir_sensor
+    ambient_temperature:
+      name: "Ambient Temperature"
+      id: amb_temp
+      filters:
+        - sliding_window_moving_average:
+            window_size: 5
+            send_every: 5
+    object_temperature:
+      name: "Object Temperature Raw"
+      id: obj_temp
+    compensated_object_temperature:
+      name: "Object Temperature Compensated"
+      id: obj_temp_comp
+    presence:
+      name: "Presence Value"
+      id: presence_val
+    motion:
+      name: "Motion Value"
+      id: motion_val
+    temperature_shock:
+      name: "Temperature Shock Value"
+      id: temp_shock_val
+  
+  # Optional: Template sensor for derived values
+  - platform: template
+    name: "Temperature Difference"
+    id: temp_diff
+    unit_of_measurement: "°C"
+    accuracy_decimals: 2
+    lambda: |-
+      if (id(amb_temp).has_state() && id(obj_temp_comp).has_state()) {
+        return id(amb_temp).state - (id(obj_temp_comp).state / 100.0);
+      }
+      return {};
+    update_interval: 1s
+
+# STHS34PF80 Binary Sensors + Optional Template Binary Sensors
+binary_sensor:
+  # STHS34PF80 binary sensors
+  - platform: sths34pf80
+    sths34pf80_id: ir_sensor
+    presence_flag:
+      name: "Presence Detected"
+      id: presence_flag
+      on_press:
+        then:
+          - logger.log: "Presence detected!"
+      on_release:
+        then:
+          - logger.log: "Presence cleared"
+    motion_flag:
+      name: "Motion Detected"
+      id: motion_flag
+      on_press:
+        then:
+          - logger.log: "Motion detected!"
+      on_release:
+        then:
+          - logger.log: "Motion cleared"
+    temperature_shock_flag:
+      name: "Temperature Shock Detected"
+      id: temp_shock_flag
+  
+  # Optional: Template binary sensor for "occupied" state
+  - platform: template
+    name: "Room Occupied"
+    id: room_occupied
+    lambda: |-
+      return id(presence_flag).state || id(motion_flag).state;
+    filters:
+      - delayed_off: 30s  # Keep "occupied" for 30s after last detection
+
