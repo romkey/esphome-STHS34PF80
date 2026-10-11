@@ -96,7 +96,7 @@ class STHS34PF80Component : public PollingComponent, public i2c::I2CDevice {
   void update() override;
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::DATA; }
-  
+
   // Public methods for reading sensor data (called by sensor/binary_sensor platforms)
   bool read_data_ready(bool &ready);
   bool read_ambient_temperature(float &temp);
@@ -112,7 +112,7 @@ class STHS34PF80Component : public PollingComponent, public i2c::I2CDevice {
   // Sensor registration
   void register_sensor(STHS34PF80Sensor *sensor);
   void register_binary_sensor(STHS34PF80BinarySensor *binary_sensor);
-  
+
   // Force immediate updates for low latency
   void force_update_binary_sensors();
 
@@ -133,7 +133,6 @@ class STHS34PF80Component : public PollingComponent, public i2c::I2CDevice {
   void set_int_active_low(bool active_low) { int_active_low_ = active_low; }
   void set_int_open_drain(bool open_drain) { int_open_drain_ = open_drain; }
   void set_int_latched(bool latched) { int_latched_ = latched; }
-  void set_force_update(bool force_update) { force_update_ = force_update; }
 
  protected:
   bool reset_sensor_();
@@ -159,7 +158,6 @@ class STHS34PF80Component : public PollingComponent, public i2c::I2CDevice {
   bool int_active_low_{false};
   bool int_open_drain_{false};
   bool int_latched_{false};
-  bool force_update_{false};
 
   // Sensor references
   std::vector<STHS34PF80Sensor *> sensors_;
@@ -168,4 +166,3 @@ class STHS34PF80Component : public PollingComponent, public i2c::I2CDevice {
 
 }  // namespace sths34pf80
 }  // namespace esphome
-

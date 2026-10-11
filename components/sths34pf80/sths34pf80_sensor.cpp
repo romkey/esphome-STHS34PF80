@@ -77,4 +77,3 @@ void STHS34PF80Sensor::update() {
 
 }  // namespace sths34pf80
 }  // namespace esphome
-

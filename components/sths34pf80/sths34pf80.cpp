@@ -153,16 +153,14 @@ void STHS34PF80Component::update() {
   for (auto *sensor : sensors_) {
     sensor->update();
   }
-  
+
   // Update all registered binary sensors
   for (auto *binary_sensor : binary_sensors_) {
     binary_sensor->update();
   }
 }
 
-void STHS34PF80Component::register_sensor(STHS34PF80Sensor *sensor) {
-  sensors_.push_back(sensor);
-}
+void STHS34PF80Component::register_sensor(STHS34PF80Sensor *sensor) { sensors_.push_back(sensor); }
 
 void STHS34PF80Component::register_binary_sensor(STHS34PF80BinarySensor *binary_sensor) {
   binary_sensors_.push_back(binary_sensor);
@@ -440,4 +438,3 @@ bool STHS34PF80Component::read_register_bits_(uint8_t reg, uint8_t bit_pos, uint
 
 }  // namespace sths34pf80
 }  // namespace esphome
-

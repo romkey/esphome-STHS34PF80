@@ -5,7 +5,8 @@ from esphome.const import (
     DEVICE_CLASS_MOTION,
     DEVICE_CLASS_PRESENCE,
 )
-from . import sths34pf80_ns, STHS34PF80Component, CONF_STHS34PF80_ID
+
+from . import CONF_STHS34PF80_ID, STHS34PF80Component, sths34pf80_ns
 
 DEPENDENCIES = ["sths34pf80"]
 
@@ -51,4 +52,3 @@ async def to_code(config):
             cg.add(sens.set_parent(parent))
             cg.add(sens.set_sensor_type(sensor_type))
             cg.add(parent.register_binary_sensor(sens))
-

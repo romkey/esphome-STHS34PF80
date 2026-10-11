@@ -1,113 +1,35 @@
-# STHS34PF80 Low Latency Configuration
-# Optimized for fast motion/presence detection in Home Assistant
+# Example: fastest presence and motion reporting. Fast polling, a high
+# output data rate, the shortest filters and minimal averaging. ESP32 DevKit.
+#
+# Wiring: VDD -> 3.3V, GND -> GND, SDA -> GPIO21, SCL -> GPIO22.
 
-esphome:
+substitutions:
   name: sths34pf80-low-latency
   friendly_name: STHS34PF80 Low Latency
+  sths34pf80_component_source: ../components
+  sths34pf80_update_interval: 100ms
+  sths34pf80_output_data_rate: 8HZ
+  sths34pf80_motion_lpf: ODR_DIV_9
+  sths34pf80_motion_presence_lpf: ODR_DIV_9
+  sths34pf80_presence_lpf: ODR_DIV_20
+  sths34pf80_temperature_lpf: ODR_DIV_50
+  sths34pf80_amb_temp_avg: "1"
+  sths34pf80_obj_temp_avg: "2"
 
 esp32:
   board: esp32dev
   framework:
     type: esp-idf
 
-# External Components
-external_components:
-  - source: github://romkey/esphome-STHS34PF80
-    components: [ sths34pf80 ]
-
-# I2C Configuration
 i2c:
+  id: i2c0
   sda: GPIO21
   scl: GPIO22
-  scan: true
+  frequency: 400kHz
 
-# STHS34PF80 Component - Optimized for low latency
-sths34pf80:
-  - id: ir_sensor
-    address: 0x5A
-    update_interval: 100ms  # Very fast polling (10Hz)
-    output_data_rate: 8HZ   # High sensor sampling rate
-    
-    # Optimized filter settings for fast response
-    motion_lpf: ODR_DIV_9           # Fastest motion detection
-    motion_presence_lpf: ODR_DIV_9  # Fastest motion+presence
-    presence_lpf: ODR_DIV_20        # Fast presence detection
-    temperature_lpf: ODR_DIV_50     # Moderate temperature filtering
-    
-    # Minimal averaging for fastest response
-    amb_temp_avg: 1    # Minimal ambient temp averaging
-    obj_temp_avg: 2    # Minimal object temp averaging
-    
-    # Enable interrupts for immediate wake-up
-    enable_presence_interrupt: true
-    enable_motion_interrupt: true
-    int_active_low: false
-    int_open_drain: false
-    int_latched: false
-    
-    # Binary sensors automatically force updates for low latency
+packages:
+  base: !include common/base.yaml
+  sths34pf80: !include ../packages/sths34pf80.yaml
 
-# Sensors - Only essential ones for low latency
-sensor:
-  - platform: sths34pf80
-    sths34pf80_id: ir_sensor
-    # Only include sensors you actually need
-    ambient_temperature:
-      name: "Room Temperature"
-      id: room_temp
-      # Remove filters for fastest updates
-    presence:
-      name: "Presence Value"
-      id: presence_val
-      # Raw presence value for debugging
-
-# Binary Sensors - Optimized for immediate Home Assistant updates
-binary_sensor:
-  - platform: sths34pf80
-    sths34pf80_id: ir_sensor
-    presence_flag:
-      name: "Presence Detected"
-      id: presence_flag
-      # These will update immediately to Home Assistant
-      on_press:
-        then:
-          - logger.log: "PRESENCE DETECTED - Immediate trigger!"
-          - homeassistant.event:
-              event: esphome.presence_detected
-              data:
-                timestamp: !lambda 'return id(room_temp).state;'
-    
-    motion_flag:
-      name: "Motion Detected"
-      id: motion_flag
-      # These will update immediately to Home Assistant
-      on_press:
-        then:
-          - logger.log: "MOTION DETECTED - Immediate trigger!"
-          - homeassistant.event:
-              event: esphome.motion_detected
-              data:
-                timestamp: !lambda 'return id(room_temp).state;'
-
-# Additional optimizations for low latency
-logger:
-  level: INFO
-  logs:
-    sths34pf80: DEBUG  # Enable debug logging for sensor
-
-# API configuration for fast updates
-api:
-  encryption:
-    key: "YOUR_API_KEY_HERE"
-
-# WiFi configuration
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  fast_connect: true  # Faster WiFi connection
-  reboot_timeout: 0s  # Disable reboot timeout
-
-# OTA for easy updates
-ota:
-  - platform: esphome
-    password: "YOUR_OTA_PASSWORD"
+  fast_connect: true

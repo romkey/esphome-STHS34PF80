@@ -1,57 +1,36 @@
-# Advanced STHS34PF80 Example Configuration
-# This example shows all available sensors and configuration options
+# Example: every STHS34PF80 option, using the component directly instead of
+# packages/sths34pf80.yaml. ESP32 DevKit.
+#
+# Wiring: VDD -> 3.3V, GND -> GND, SDA -> GPIO21, SCL -> GPIO22,
+# INT -> GPIO4 (optional). None are strapping pins on the ESP32.
 
-esphome:
+substitutions:
   name: sths34pf80-advanced
-  friendly_name: STHS34PF80 Advanced Example
+  friendly_name: STHS34PF80 Advanced
 
 esp32:
   board: esp32dev
   framework:
-    type: arduino
+    type: esp-idf
 
-# Enable logging
-logger:
-  level: DEBUG
+packages:
+  base: !include common/base.yaml
 
-# Enable Home Assistant API
-api:
-  encryption:
-    key: !secret api_encryption_key
+external_components:
+  - source: ../components
+    components: [sths34pf80]
 
-ota:
-  password: !secret ota_password
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  
-  # Enable fallback hotspot
-  ap:
-    ssid: "STHS34PF80 Advanced"
-    password: !secret fallback_password
-
-captive_portal:
-
-# I2C Configuration
 i2c:
+  id: i2c0
   sda: GPIO21
   scl: GPIO22
-  scan: true
   frequency: 400kHz
 
-# External Components
-external_components:
-  - source: github://romkey/esphome-STHS34PF80
-    components: [ sths34pf80 ]
-
-# STHS34PF80 Component (top-level configuration with all hardware settings)
 sths34pf80:
   - id: ir_sensor
+    i2c_id: i2c0
     address: 0x5A
     update_interval: 500ms
-    
-    # Hardware configuration
     output_data_rate: 2HZ
     motion_lpf: ODR_DIV_9
     motion_presence_lpf: ODR_DIV_20
@@ -61,17 +40,14 @@ sths34pf80:
     obj_temp_avg: 32
     wide_gain_mode: false
     block_data_update: true
-    
-    # Interrupt configuration (if using INT pin)
+    # Drive the INT pin on presence or motion.
     enable_presence_interrupt: true
     enable_motion_interrupt: true
     int_active_low: false
     int_open_drain: false
     int_latched: false
 
-# STHS34PF80 Sensors + Optional Template Sensors
 sensor:
-  # STHS34PF80 numeric sensors
   - platform: sths34pf80
     sths34pf80_id: ir_sensor
     ambient_temperature:
@@ -84,65 +60,48 @@ sensor:
     object_temperature:
       name: "Object Temperature Raw"
       id: obj_temp
+      entity_category: diagnostic
     compensated_object_temperature:
       name: "Object Temperature Compensated"
       id: obj_temp_comp
+      entity_category: diagnostic
     presence:
       name: "Presence Value"
       id: presence_val
+      entity_category: diagnostic
     motion:
       name: "Motion Value"
       id: motion_val
+      entity_category: diagnostic
     temperature_shock:
       name: "Temperature Shock Value"
       id: temp_shock_val
-  
-  # Optional: Template sensor for derived values
-  - platform: template
-    name: "Temperature Difference"
-    id: temp_diff
-    unit_of_measurement: "°C"
-    accuracy_decimals: 2
-    lambda: |-
-      if (id(amb_temp).has_state() && id(obj_temp_comp).has_state()) {
-        return id(amb_temp).state - (id(obj_temp_comp).state / 100.0);
-      }
-      return {};
-    update_interval: 1s
+      entity_category: diagnostic
 
-# STHS34PF80 Binary Sensors + Optional Template Binary Sensors
 binary_sensor:
-  # STHS34PF80 binary sensors
   - platform: sths34pf80
     sths34pf80_id: ir_sensor
     presence_flag:
-      name: "Presence Detected"
+      name: "Presence"
       id: presence_flag
-      on_press:
-        then:
-          - logger.log: "Presence detected!"
-      on_release:
-        then:
-          - logger.log: "Presence cleared"
     motion_flag:
-      name: "Motion Detected"
+      name: "Motion"
       id: motion_flag
-      on_press:
-        then:
-          - logger.log: "Motion detected!"
-      on_release:
-        then:
-          - logger.log: "Motion cleared"
     temperature_shock_flag:
-      name: "Temperature Shock Detected"
+      name: "Temperature Shock"
       id: temp_shock_flag
-  
-  # Optional: Template binary sensor for "occupied" state
+
+  # The INT pin, to check the interrupt wiring.
+  - platform: gpio
+    pin: GPIO4
+    name: "Interrupt Pin"
+    entity_category: diagnostic
+
+  # Occupied while presence or motion is seen, and for 30s afterwards.
   - platform: template
-    name: "Room Occupied"
-    id: room_occupied
+    name: "Occupied"
+    device_class: occupancy
     lambda: |-
       return id(presence_flag).state || id(motion_flag).state;
     filters:
-      - delayed_off: 30s  # Keep "occupied" for 30s after last detection
-
+      - delayed_off: 30s

@@ -1,0 +1,107 @@
+# STHS34PF80 infrared presence, motion and ambient temperature sensor.
+#
+# Loads the sths34pf80 external component and creates the entities most
+# people want: ambient temperature, presence and motion. The raw presence and
+# motion values are published as diagnostics for tuning. For every option
+# (interrupts, gain, all raw values) use the component directly; see
+# docs/configuration.md and examples/advanced.yaml.
+#
+# Requires: an i2c bus with id i2c0 (or set sths34pf80_i2c_id). The sensor's
+# I2C address is fixed at 0x5A (datasheet DS13916 section 5.1), so a
+# second sensor needs a second bus.
+#
+# Substitutions (defaults in brackets):
+#   sths34pf80_component_source       external component source
+#                                     [github://romkey/esphome-STHS34PF80@v0.1.0]
+#   sths34pf80_id                     component id [sths34pf80_hub]
+#   sths34pf80_i2c_id                 i2c bus id [i2c0]
+#   sths34pf80_update_interval        polling interval [1s]
+#   sths34pf80_output_data_rate       sensor ODR: 0.25HZ..30HZ [1HZ]
+#   sths34pf80_motion_lpf             motion filter, ODR_DIV_9..800 [ODR_DIV_9]
+#   sths34pf80_motion_presence_lpf    motion+presence filter [ODR_DIV_20]
+#   sths34pf80_presence_lpf           presence filter [ODR_DIV_50]
+#   sths34pf80_temperature_lpf        temperature shock filter [ODR_DIV_100]
+#   sths34pf80_amb_temp_avg           ambient averaging: 1, 2, 4, 8 [8]
+#   sths34pf80_obj_temp_avg           object averaging: 2..2048 [32]
+#   sths34pf80_temperature_name       entity name [Ambient Temperature]
+#   sths34pf80_temperature_id         sensor id [sths34pf80_temperature]
+#   sths34pf80_temperature_window     moving-average window, samples [5]
+#   sths34pf80_presence_name          entity name [Presence]
+#   sths34pf80_presence_id            binary sensor id [sths34pf80_presence]
+#   sths34pf80_motion_name            entity name [Motion]
+#   sths34pf80_motion_id              binary sensor id [sths34pf80_motion]
+#   sths34pf80_presence_value_name    entity name [Presence Value]
+#   sths34pf80_presence_value_id      sensor id [sths34pf80_presence_value]
+#   sths34pf80_motion_value_name      entity name [Motion Value]
+#   sths34pf80_motion_value_id        sensor id [sths34pf80_motion_value]
+#   sths34pf80_entity_category        category of the raw values [diagnostic]
+
+substitutions:
+  sths34pf80_component_source: "github://romkey/esphome-STHS34PF80@v0.1.0"
+  sths34pf80_id: "sths34pf80_hub"
+  sths34pf80_i2c_id: "i2c0"
+  sths34pf80_update_interval: "1s"
+  sths34pf80_output_data_rate: "1HZ"
+  sths34pf80_motion_lpf: "ODR_DIV_9"
+  sths34pf80_motion_presence_lpf: "ODR_DIV_20"
+  sths34pf80_presence_lpf: "ODR_DIV_50"
+  sths34pf80_temperature_lpf: "ODR_DIV_100"
+  sths34pf80_amb_temp_avg: "8"
+  sths34pf80_obj_temp_avg: "32"
+  sths34pf80_temperature_name: "Ambient Temperature"
+  sths34pf80_temperature_id: "sths34pf80_temperature"
+  sths34pf80_temperature_window: "5"
+  sths34pf80_presence_name: "Presence"
+  sths34pf80_presence_id: "sths34pf80_presence"
+  sths34pf80_motion_name: "Motion"
+  sths34pf80_motion_id: "sths34pf80_motion"
+  sths34pf80_presence_value_name: "Presence Value"
+  sths34pf80_presence_value_id: "sths34pf80_presence_value"
+  sths34pf80_motion_value_name: "Motion Value"
+  sths34pf80_motion_value_id: "sths34pf80_motion_value"
+  sths34pf80_entity_category: "diagnostic"
+
+external_components:
+  - source: ${sths34pf80_component_source}
+    components: [sths34pf80]
+
+sths34pf80:
+  - id: ${sths34pf80_id}
+    i2c_id: ${sths34pf80_i2c_id}
+    update_interval: ${sths34pf80_update_interval}
+    output_data_rate: ${sths34pf80_output_data_rate}
+    motion_lpf: ${sths34pf80_motion_lpf}
+    motion_presence_lpf: ${sths34pf80_motion_presence_lpf}
+    presence_lpf: ${sths34pf80_presence_lpf}
+    temperature_lpf: ${sths34pf80_temperature_lpf}
+    amb_temp_avg: ${sths34pf80_amb_temp_avg}
+    obj_temp_avg: ${sths34pf80_obj_temp_avg}
+
+sensor:
+  - platform: sths34pf80
+    sths34pf80_id: ${sths34pf80_id}
+    ambient_temperature:
+      name: "${sths34pf80_temperature_name}"
+      id: ${sths34pf80_temperature_id}
+      filters:
+        - sliding_window_moving_average:
+            window_size: ${sths34pf80_temperature_window}
+            send_every: ${sths34pf80_temperature_window}
+    presence:
+      name: "${sths34pf80_presence_value_name}"
+      id: ${sths34pf80_presence_value_id}
+      entity_category: "${sths34pf80_entity_category}"
+    motion:
+      name: "${sths34pf80_motion_value_name}"
+      id: ${sths34pf80_motion_value_id}
+      entity_category: "${sths34pf80_entity_category}"
+
+binary_sensor:
+  - platform: sths34pf80
+    sths34pf80_id: ${sths34pf80_id}
+    presence_flag:
+      name: "${sths34pf80_presence_name}"
+      id: ${sths34pf80_presence_id}
+    motion_flag:
+      name: "${sths34pf80_motion_name}"
+      id: ${sths34pf80_motion_id}

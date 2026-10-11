@@ -1,186 +1,121 @@
-# Multiple STHS34PF80 Devices Example
-# This example demonstrates using multiple STHS34PF80 sensors on the same ESP
-# Each device can have different configurations and update rates
+# Example: two STHS34PF80s on one ESP32 DevKit, by including the package
+# twice. The sensor's I2C address is fixed at 0x5A (datasheet DS13916
+# section 5.1), so each sensor needs its own I2C bus.
+#
+# Wiring: living room sensor SDA -> GPIO21, SCL -> GPIO22;
+# hallway sensor SDA -> GPIO25, SCL -> GPIO26; both VDD -> 3.3V, GND -> GND.
+# Lights: living room relay -> GPIO32, hallway relay -> GPIO33.
 
-esphome:
+substitutions:
   name: sths34pf80-multi
-  friendly_name: Multiple STHS34PF80 Sensors
+  friendly_name: STHS34PF80 Multi
 
 esp32:
   board: esp32dev
   framework:
-    type: arduino
+    type: esp-idf
 
-# Enable logging
-logger:
-
-# Enable Home Assistant API
-api:
-  encryption:
-    key: !secret api_encryption_key
-
-ota:
-  password: !secret ota_password
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  
-  ap:
-    ssid: "STHS34PF80 Multi"
-    password: !secret fallback_password
-
-captive_portal:
-
-# I2C Configuration
 i2c:
-  sda: GPIO21
-  scl: GPIO22
-  scan: true
-  frequency: 400kHz
+  - id: i2c0
+    sda: GPIO21
+    scl: GPIO22
+    frequency: 400kHz
+  - id: i2c1
+    sda: GPIO25
+    scl: GPIO26
+    frequency: 400kHz
 
-# External Components
-external_components:
-  - source: github://romkey/esphome-STHS34PF80
-    components: [ sths34pf80 ]
+packages:
+  base: !include common/base.yaml
+  living_room: !include
+    file: ../packages/sths34pf80.yaml
+    vars:
+      sths34pf80_component_source: ../components
+      sths34pf80_id: living_room_sensor
+      sths34pf80_i2c_id: i2c0
+      sths34pf80_update_interval: 5s
+      sths34pf80_temperature_name: "Living Room Temperature"
+      sths34pf80_temperature_id: living_room_temperature
+      sths34pf80_presence_name: "Living Room Presence"
+      sths34pf80_presence_id: living_room_presence
+      sths34pf80_motion_name: "Living Room Motion"
+      sths34pf80_motion_id: living_room_motion
+      sths34pf80_presence_value_name: "Living Room Presence Value"
+      sths34pf80_presence_value_id: living_room_presence_value
+      sths34pf80_motion_value_name: "Living Room Motion Value"
+      sths34pf80_motion_value_id: living_room_motion_value
+  hallway: !include
+    file: ../packages/sths34pf80.yaml
+    vars:
+      sths34pf80_component_source: ../components
+      sths34pf80_id: hallway_sensor
+      sths34pf80_i2c_id: i2c1
+      sths34pf80_update_interval: 500ms
+      sths34pf80_output_data_rate: 4HZ
+      sths34pf80_temperature_name: "Hallway Temperature"
+      sths34pf80_temperature_id: hallway_temperature
+      sths34pf80_presence_name: "Hallway Presence"
+      sths34pf80_presence_id: hallway_presence
+      sths34pf80_motion_name: "Hallway Motion"
+      sths34pf80_motion_id: hallway_motion
+      sths34pf80_presence_value_name: "Hallway Presence Value"
+      sths34pf80_presence_value_id: hallway_presence_value
+      sths34pf80_motion_value_name: "Hallway Motion Value"
+      sths34pf80_motion_value_id: hallway_motion_value
 
-# STHS34PF80 Components (multiple instances using MULTI_CONF)
-sths34pf80:
-  # First sensor - Living room (0x5A)
-  # Configured for temperature monitoring with slow updates
-  - id: living_room_sensor
-    address: 0x5A
-    update_interval: 5s
-    output_data_rate: 1HZ
-  
-  # Second sensor - Hallway (0x5B)
-  # NOTE: Requires hardware modification to change sensor address
-  # Configured for fast motion detection
-  - id: hallway_sensor
-    address: 0x5B
-    update_interval: 500ms
-    output_data_rate: 4HZ
-    motion_lpf: ODR_DIV_9  # More sensitive
+output:
+  - platform: gpio
+    pin: GPIO32
+    id: living_room_output
+  - platform: gpio
+    pin: GPIO33
+    id: hallway_output
 
-# Sensors
-sensor:
-  # Living room sensors
-  - platform: sths34pf80
-    sths34pf80_id: living_room_sensor
-    ambient_temperature:
-      name: "Living Room Temperature"
-      id: living_room_temp
-    presence:
-      name: "Living Room Presence Value"
-      id: living_room_presence_val
-  
-  # Hallway sensors
-  - platform: sths34pf80
-    sths34pf80_id: hallway_sensor
-    ambient_temperature:
-      name: "Hallway Temperature"
-      id: hallway_temp
-    motion:
-      name: "Hallway Motion Value"
-      id: hallway_motion_val
-
-# Binary Sensors
-binary_sensor:
-  # Living room presence detection
-  - platform: sths34pf80
-    sths34pf80_id: living_room_sensor
-    presence_flag:
-      name: "Living Room Occupied"
-      id: living_room_occupied
-      on_press:
-        then:
-          - logger.log: "Living room occupied"
-          - light.turn_on: living_room_light
-      on_release:
-        then:
-          - logger.log: "Living room vacant"
-          - delay: 5min
-          - light.turn_off: living_room_light
-  
-  # Hallway motion detection (security)
-  - platform: sths34pf80
-    sths34pf80_id: hallway_sensor
-    motion_flag:
-      name: "Hallway Motion Detected"
-      id: hallway_motion
-      on_press:
-        then:
-          - logger.log: "Motion in hallway - possible intruder!"
-          - homeassistant.event:
-              event: esphome.security_motion
-              data:
-                location: hallway
-                timestamp: !lambda 'return id(hallway_temp).state;'
-          - light.turn_on: hallway_light
-      on_release:
-        then:
-          - delay: 30s
-          - light.turn_off: hallway_light
-
-# Example lights (replace with your actual configuration)
 light:
   - platform: binary
     name: "Living Room Light"
     id: living_room_light
     output: living_room_output
-  
   - platform: binary
     name: "Hallway Light"
     id: hallway_light
     output: hallway_output
 
-output:
-  - platform: gpio
-    pin: GPIO25
-    id: living_room_output
-  
-  - platform: gpio
-    pin: GPIO26
-    id: hallway_output
+binary_sensor:
+  - platform: template
+    name: "Living Room Occupied"
+    device_class: occupancy
+    lambda: |-
+      return id(living_room_presence).state || id(living_room_motion).state;
+    filters:
+      - delayed_off: 5min
+    on_press:
+      - light.turn_on: living_room_light
+    on_release:
+      - light.turn_off: living_room_light
 
-# Template sensors for aggregate data
+  - platform: template
+    name: "Hallway Occupied"
+    device_class: occupancy
+    lambda: |-
+      return id(hallway_motion).state;
+    filters:
+      - delayed_off: 30s
+    on_press:
+      - light.turn_on: hallway_light
+    on_release:
+      - light.turn_off: hallway_light
+
 sensor:
   - platform: template
-    name: "Average House Temperature"
-    id: avg_temp
+    name: "Average Temperature"
     unit_of_measurement: "°C"
     device_class: temperature
-    accuracy_decimals: 2
+    state_class: measurement
+    accuracy_decimals: 1
     lambda: |-
-      if (id(living_room_temp).has_state() && id(hallway_temp).has_state()) {
-        return (id(living_room_temp).state + id(hallway_temp).state) / 2.0;
+      if (id(living_room_temperature).has_state() && id(hallway_temperature).has_state()) {
+        return (id(living_room_temperature).state + id(hallway_temperature).state) / 2.0;
       }
       return {};
     update_interval: 10s
-
-# Template binary sensor for any occupancy
-binary_sensor:
-  - platform: template
-    name: "House Occupied"
-    id: house_occupied
-    lambda: |-
-      return id(living_room_occupied).state || id(hallway_motion).state;
-    filters:
-      - delayed_off: 5min
-
-# Text sensor for overall house status
-text_sensor:
-  - platform: template
-    name: "House Status"
-    lambda: |-
-      if (id(living_room_occupied).state && id(hallway_motion).state) {
-        return {"Active - Multiple Rooms"};
-      } else if (id(living_room_occupied).state) {
-        return {"Living Room Occupied"};
-      } else if (id(hallway_motion).state) {
-        return {"Hallway Motion"};
-      } else {
-        return {"Vacant"};
-      }
-    update_interval: 1s
-

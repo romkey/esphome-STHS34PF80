@@ -27,4 +27,3 @@ class STHS34PF80BinarySensor : public binary_sensor::BinarySensor {
 
 }  // namespace sths34pf80
 }  // namespace esphome
-
