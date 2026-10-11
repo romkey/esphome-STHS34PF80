@@ -39,4 +39,3 @@ void STHS34PF80BinarySensor::update() {
 
 }  // namespace sths34pf80
 }  // namespace esphome
-

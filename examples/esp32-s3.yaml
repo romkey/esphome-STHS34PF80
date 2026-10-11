@@ -1,0 +1,27 @@
+# Example: one STHS34PF80 on an ESP32-S3 DevKitC-1 (Xtensa LX7).
+#
+# Board and pin choices live here, never in packages/.
+#
+# Wiring: STHS34PF80 VDD -> 3.3V, GND -> GND, SDA -> GPIO8, SCL -> GPIO9.
+# GPIO8 and GPIO9 are not strapping pins on this chip.
+
+substitutions:
+  name: sths34pf80-esp32-s3
+  friendly_name: STHS34PF80 ESP32-S3
+  # Use the component in this repo rather than the released one.
+  sths34pf80_component_source: ../components
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+i2c:
+  id: i2c0
+  sda: GPIO8
+  scl: GPIO9
+  frequency: 400kHz
+
+packages:
+  base: !include common/base.yaml
+  sths34pf80: !include ../packages/sths34pf80.yaml

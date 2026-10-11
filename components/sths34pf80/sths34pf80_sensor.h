@@ -29,4 +29,3 @@ class STHS34PF80Sensor : public sensor::Sensor {
 
 }  // namespace sths34pf80
 }  // namespace esphome
-

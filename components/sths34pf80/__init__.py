@@ -5,6 +5,7 @@ from esphome.const import CONF_ID
 
 CODEOWNERS = ["@romkey"]
 DEPENDENCIES = ["i2c"]
+AUTO_LOAD = ["sensor", "binary_sensor"]
 MULTI_CONF = True
 
 sths34pf80_ns = cg.esphome_ns.namespace("sths34pf80")
@@ -28,7 +29,6 @@ CONF_ENABLE_MOTION_INTERRUPT = "enable_motion_interrupt"
 CONF_INT_ACTIVE_LOW = "int_active_low"
 CONF_INT_OPEN_DRAIN = "int_open_drain"
 CONF_INT_LATCHED = "int_latched"
-CONF_FORCE_UPDATE = "force_update"
 
 # Enums
 OutputDataRate = sths34pf80_ns.enum("OutputDataRate")
@@ -57,22 +57,22 @@ LPF_CONFIGS = {
 
 AmbTempAvg = sths34pf80_ns.enum("AmbTempAvg")
 AMB_TEMP_AVGS = {
-    "8": AmbTempAvg.AVG_T_8,
-    "4": AmbTempAvg.AVG_T_4,
-    "2": AmbTempAvg.AVG_T_2,
-    "1": AmbTempAvg.AVG_T_1,
+    8: AmbTempAvg.AVG_T_8,
+    4: AmbTempAvg.AVG_T_4,
+    2: AmbTempAvg.AVG_T_2,
+    1: AmbTempAvg.AVG_T_1,
 }
 
 ObjTempAvg = sths34pf80_ns.enum("ObjTempAvg")
 OBJ_TEMP_AVGS = {
-    "2": ObjTempAvg.AVG_TMOS_2,
-    "8": ObjTempAvg.AVG_TMOS_8,
-    "32": ObjTempAvg.AVG_TMOS_32,
-    "128": ObjTempAvg.AVG_TMOS_128,
-    "256": ObjTempAvg.AVG_TMOS_256,
-    "512": ObjTempAvg.AVG_TMOS_512,
-    "1024": ObjTempAvg.AVG_TMOS_1024,
-    "2048": ObjTempAvg.AVG_TMOS_2048,
+    2: ObjTempAvg.AVG_TMOS_2,
+    8: ObjTempAvg.AVG_TMOS_8,
+    32: ObjTempAvg.AVG_TMOS_32,
+    128: ObjTempAvg.AVG_TMOS_128,
+    256: ObjTempAvg.AVG_TMOS_256,
+    512: ObjTempAvg.AVG_TMOS_512,
+    1024: ObjTempAvg.AVG_TMOS_1024,
+    2048: ObjTempAvg.AVG_TMOS_2048,
 }
 
 CONFIG_SCHEMA = (
@@ -94,8 +94,10 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_TEMPERATURE_LPF, default="ODR_DIV_100"): cv.enum(
                 LPF_CONFIGS, upper=True
             ),
-            cv.Optional(CONF_AMB_TEMP_AVG, default="8"): cv.enum(AMB_TEMP_AVGS),
-            cv.Optional(CONF_OBJ_TEMP_AVG, default="32"): cv.enum(OBJ_TEMP_AVGS),
+            cv.Optional(CONF_AMB_TEMP_AVG, default=8): cv.enum(AMB_TEMP_AVGS, int=True),
+            cv.Optional(CONF_OBJ_TEMP_AVG, default=32): cv.enum(
+                OBJ_TEMP_AVGS, int=True
+            ),
             cv.Optional(CONF_WIDE_GAIN_MODE, default=False): cv.boolean,
             cv.Optional(CONF_BLOCK_DATA_UPDATE, default=True): cv.boolean,
             cv.Optional(CONF_ENABLE_PRESENCE_INTERRUPT, default=False): cv.boolean,
@@ -103,7 +105,6 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_INT_ACTIVE_LOW, default=False): cv.boolean,
             cv.Optional(CONF_INT_OPEN_DRAIN, default=False): cv.boolean,
             cv.Optional(CONF_INT_LATCHED, default=False): cv.boolean,
-            cv.Optional(CONF_FORCE_UPDATE, default=False): cv.boolean,
         }
     )
     .extend(cv.polling_component_schema("60s"))
@@ -131,6 +132,3 @@ async def to_code(config):
     cg.add(var.set_int_active_low(config[CONF_INT_ACTIVE_LOW]))
     cg.add(var.set_int_open_drain(config[CONF_INT_OPEN_DRAIN]))
     cg.add(var.set_int_latched(config[CONF_INT_LATCHED]))
-    cg.add(var.set_force_update(config[CONF_FORCE_UPDATE]))
-
-

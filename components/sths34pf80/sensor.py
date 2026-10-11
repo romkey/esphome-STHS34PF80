@@ -3,11 +3,12 @@ import esphome.config_validation as cv
 from esphome.components import sensor
 from esphome.const import (
     DEVICE_CLASS_TEMPERATURE,
+    ICON_THERMOMETER,
     STATE_CLASS_MEASUREMENT,
     UNIT_CELSIUS,
-    ICON_THERMOMETER,
 )
-from . import sths34pf80_ns, STHS34PF80Component, CONF_STHS34PF80_ID
+
+from . import CONF_STHS34PF80_ID, STHS34PF80Component, sths34pf80_ns
 
 DEPENDENCIES = ["sths34pf80"]
 
@@ -87,4 +88,3 @@ async def to_code(config):
             cg.add(sens.set_parent(parent))
             cg.add(sens.set_sensor_type(sensor_type))
             cg.add(parent.register_sensor(sens))
-
