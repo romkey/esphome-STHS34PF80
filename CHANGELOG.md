@@ -22,6 +22,10 @@ All notable changes to this project are documented here. The format follows
 - Docker Compose, pre-commit, GitHub CI/lint/release workflows and Renovate,
   following esphome-ai-coding-rules.
 - docs/configuration.md and docs/overview.md.
+- SECURITY.md, a license note for the bundled datasheet, and a pre-commit
+  check that every datasheet has one.
+- `scripts/setup-github.sh`: protects `main` (PRs only, CI and Lint
+  required) and turns on GitHub security features.
 
 ### Fixed
 
