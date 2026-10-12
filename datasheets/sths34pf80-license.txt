@@ -1,0 +1,4 @@
+sths34pf80.pdf (STHS34PF80 datasheet, DS13916 rev 2) is copyright
+STMicroelectronics and is not covered by this repository's license. It is
+included unmodified, for reference only. For terms of use and the latest
+version, see STMicroelectronics.

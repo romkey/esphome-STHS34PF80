@@ -132,4 +132,6 @@ docker compose run --rm esphome run examples/esp32.yaml
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE), except the manufacturer datasheets in [datasheets/](datasheets/),
+which belong to their manufacturers and are not covered by this license; see
+each datasheet's `-license.txt`.
